@@ -14,6 +14,8 @@ describe('the RoomNameScreen component', () => {
       <RoomNameScreen
         name="test"
         roomName="testRoom"
+        isMediaReady={false}
+        setStep={() => {}}
         setName={() => {}}
         setRoomName={() => {}}
         handleSubmit={() => {}}
@@ -30,6 +32,8 @@ describe('the RoomNameScreen component', () => {
       <RoomNameScreen
         name="test"
         roomName="testRoom"
+        isMediaReady={false}
+        setStep={() => {}}
         setName={() => {}}
         setRoomName={() => {}}
         handleSubmit={() => {}}
@@ -55,6 +59,8 @@ describe('the RoomNameScreen component', () => {
       <RoomNameScreen
         name="test"
         roomName="testRoom"
+        isMediaReady={false}
+        setStep={() => {}}
         setName={() => {}}
         setRoomName={() => {}}
         handleSubmit={() => {}}

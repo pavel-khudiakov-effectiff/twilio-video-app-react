@@ -1,6 +1,9 @@
-import React, { ChangeEvent, FormEvent } from 'react';
+import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Typography, makeStyles, TextField, Grid, Button, InputLabel, Theme } from '@material-ui/core';
+import useChatContext from '../../../hooks/useChatContext/useChatContext';
+import useVideoContext from '../../../hooks/useVideoContext/useVideoContext';
 import { useAppState } from '../../../state';
+import { Steps } from '../PreJoinScreens';
 
 const useStyles = makeStyles((theme: Theme) => ({
   gutterBottom: {
@@ -21,6 +24,7 @@ const useStyles = makeStyles((theme: Theme) => ({
     width: '100%',
   },
   continueButton: {
+    marginLeft: '1em',
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
@@ -33,11 +37,26 @@ interface RoomNameScreenProps {
   setName: (name: string) => void;
   setRoomName: (roomName: string) => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  isMediaReady: boolean;
+  setStep: (step: Steps) => void;
 }
 
-export default function RoomNameScreen({ name, roomName, setName, setRoomName, handleSubmit }: RoomNameScreenProps) {
+export default function RoomNameScreen({
+  name,
+  roomName,
+  setName,
+  setRoomName,
+  handleSubmit,
+  isMediaReady,
+  setStep,
+}: RoomNameScreenProps) {
   const classes = useStyles();
   const { user } = useAppState();
+
+  const { getToken, isFetching } = useAppState();
+  const { connect: chatConnect } = useChatContext();
+  const { connect: videoConnect, isConnecting } = useVideoContext();
+  const [isSkipDeviceSelection, setSkipDeviceSelection] = useState<boolean>(false);
 
   const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value);
@@ -46,6 +65,20 @@ export default function RoomNameScreen({ name, roomName, setName, setRoomName, h
   const handleRoomNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     setRoomName(event.target.value);
   };
+
+  const handleJoin = () => {
+    getToken(name, roomName).then(({ token }) => {
+      videoConnect(token);
+      process.env.REACT_APP_DISABLE_TWILIO_CONVERSATIONS !== 'true' && chatConnect(token);
+    });
+  };
+
+  useEffect(() => {
+    if (isMediaReady && isSkipDeviceSelection && !isFetching && !isConnecting) {
+      handleJoin();
+      setSkipDeviceSelection(false);
+    }
+  }, [isMediaReady, isSkipDeviceSelection]);
 
   const hasUsername = !window.location.search.includes('customIdentity=true') && user?.displayName;
 
@@ -98,6 +131,22 @@ export default function RoomNameScreen({ name, roomName, setName, setRoomName, h
             color="primary"
             disabled={!name || !roomName}
             className={classes.continueButton}
+            onClick={() => {
+              setStep(Steps.skipDeviceSelectionStep);
+              setSkipDeviceSelection(true);
+            }}
+          >
+            Skip Device Selection
+          </Button>
+          <Button
+            variant="contained"
+            type="submit"
+            color="primary"
+            disabled={!name || !roomName}
+            className={classes.continueButton}
+            onClick={() => {
+              setStep(Steps.deviceSelectionStep);
+            }}
           >
             Continue
           </Button>

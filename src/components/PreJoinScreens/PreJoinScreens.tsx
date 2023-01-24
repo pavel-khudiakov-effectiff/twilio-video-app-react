@@ -10,11 +10,12 @@ import useVideoContext from '../../hooks/useVideoContext/useVideoContext';
 export enum Steps {
   roomNameStep,
   deviceSelectionStep,
+  skipDeviceSelectionStep,
 }
 
 export default function PreJoinScreens() {
   const { user } = useAppState();
-  const { getAudioAndVideoTracks } = useVideoContext();
+  const { getAudioAndVideoTracks, isAcquiringLocalTracks } = useVideoContext();
   const { URLRoomName } = useParams<{ URLRoomName?: string }>();
   const [step, setStep] = useState(Steps.roomNameStep);
 
@@ -22,6 +23,7 @@ export default function PreJoinScreens() {
   const [roomName, setRoomName] = useState<string>('');
 
   const [mediaError, setMediaError] = useState<Error>();
+  const [isMediaReady, setIsMediaReady] = useState<boolean>(false);
 
   useEffect(() => {
     if (URLRoomName) {
@@ -33,12 +35,18 @@ export default function PreJoinScreens() {
   }, [user, URLRoomName]);
 
   useEffect(() => {
-    if (step === Steps.deviceSelectionStep && !mediaError) {
-      getAudioAndVideoTracks().catch(error => {
-        console.log('Error acquiring local media:');
-        console.dir(error);
-        setMediaError(error);
-      });
+    if ((step === Steps.deviceSelectionStep || step === Steps.skipDeviceSelectionStep) && !mediaError) {
+      getAudioAndVideoTracks()
+        .catch(error => {
+          console.log('Error acquiring local media:');
+          console.dir(error);
+          setMediaError(error);
+        })
+        .then(() => {
+          if (!isAcquiringLocalTracks) {
+            setIsMediaReady(true);
+          }
+        });
     }
   }, [getAudioAndVideoTracks, step, mediaError]);
 
@@ -49,19 +57,20 @@ export default function PreJoinScreens() {
     if (!window.location.origin.includes('twil.io') && !window.STORYBOOK_ENV) {
       window.history.replaceState(null, '', window.encodeURI(`/room/${roomName}${window.location.search || ''}`));
     }
-    setStep(Steps.deviceSelectionStep);
   };
 
   return (
     <IntroContainer>
       <MediaErrorSnackbar error={mediaError} />
-      {step === Steps.roomNameStep && (
+      {(step === Steps.roomNameStep || step === Steps.skipDeviceSelectionStep) && (
         <RoomNameScreen
           name={name}
           roomName={roomName}
           setName={setName}
           setRoomName={setRoomName}
           handleSubmit={handleSubmit}
+          isMediaReady={isMediaReady}
+          setStep={setStep}
         />
       )}
 
